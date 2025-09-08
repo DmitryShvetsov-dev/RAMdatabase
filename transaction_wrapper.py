@@ -24,29 +24,58 @@ class WrappedDatabase(DataBaseAbstractClass):
 
     def unset(self, k: str) -> None:
         if len(self.layers) >= 1:
-            self.layers[-1].pop(k, None)
+            self.layers[-1][k] = "NULL"
             return None
         else:
             return self.database.unset(k)
 
     def counts(self, v: str) -> int:
-        return self.database.counts(v)
+        _ = 0
+        seen_names = set()
+        if len(self.layers) >= 1:
+            for item in self.layers[::-1]:
+                for key, val in item.items():
+                    if key not in seen_names and val == v:
+                        _ += 1
+                    seen_names.add(key)
+            for key, val in self.database.read_database().items():
+                if key not in seen_names and val == v:
+                    _ += 1
+                    seen_names.add(key)
+            return _
+        else:
+            return self.database.counts(v)
 
     def find(self, v: str) -> str:
-        return self.database.find(v)
+        str_ = ""
+        seen_names = set()
+        if len(self.layers) >= 1:
+            for item in self.layers[::-1]:
+                for key, val in item.items():
+                    if key not in seen_names and val == v:
+                        str_ += f"{key} "
+                    seen_names.add(key)
+            for key, val in self.database.read_database().items():
+                if key not in seen_names and val == v:
+                    str_ += f"{key} "
+                    seen_names.add(key)
+            print(seen_names)
+            return str_[:-1]
+        else:
+            return self.database.find(v)
 
-    def begin(self):
+    def begin(self) -> None:
         self.layers.append({})
-        print(self.layers)
         return None
 
-    def rollback(self):
+    def rollback(self) -> None:
         if len(self.layers) == 1:
             self.layers.clear()
         elif len(self.layers) >= 2:
             self.layers.pop()
+        return None
 
-    def commit(self):
+    def commit(self) -> None:
         if len(self.layers) == 1:
             self.database.commit(self.layers[0])
             self.layers.clear()

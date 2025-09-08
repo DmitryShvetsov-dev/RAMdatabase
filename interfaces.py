@@ -30,3 +30,6 @@ class DataBaseAbstractClass(ABC):
 
     def commit(self, *args, **kwargs):
         pass
+
+    def read_database(self) -> dict[str,str]:
+        return {}
